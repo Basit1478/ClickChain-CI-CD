@@ -1,0 +1,49 @@
+name: Build & Deploy to ECS (UAT)
+
+on:
+  push:
+    branches:
+      - uat
+
+jobs:
+  uat:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------
+      # Checkout Code
+      # ----------------------------
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ----------------------------
+      # Set up Python 3.12
+      # ----------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # ----------------------------
+      # Install Dependencies
+      # ----------------------------
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      # ----------------------------
+      # Run Tests (stops on failure)
+      # ----------------------------
+      - name: Run Tests
+        run: pytest tests/ -v
+
+      # ----------------------------
+      # Build Package (ZIP artifact)
+      # ----------------------------
+      - name: Build Package
+        run: zip -r clickchain-app.zip . -x "*.git*" -x "__pycache__/*" -x "*.pyc"
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clickchain-app
+          path: clickchain-app.zip
