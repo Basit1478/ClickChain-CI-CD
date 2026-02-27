@@ -1,5 +1,4 @@
 name: Build & Deploy to ECS (UAT)
-
 on:
   push:
     branches:
@@ -8,7 +7,6 @@ on:
 jobs:
   uat:
     runs-on: ubuntu-latest
-
     steps:
       # ----------------------------
       # Checkout Code
@@ -48,7 +46,8 @@ jobs:
           name: clickchain-app
           path: clickchain-app.zip
 
-           # Setup SSH Key
+      # ----------------------------
+      # Setup SSH Key
       # ----------------------------
       - name: Setup SSH Key
         run: |
@@ -58,15 +57,20 @@ jobs:
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       # ----------------------------
-      # Deploy JAR to EC2 
+      # Deploy ZIP to EC2
       # ----------------------------
-      - name: Deploy Python to EC2
+      - name: Deploy to EC2
         run: |
-          scp -i ~/.ssh/ec2_key target/*.py ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/app/
+          scp -i ~/.ssh/ec2_key clickchain-app.zip ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/app/
 
       # ----------------------------
-      # Restart Apache Service
+      # Unzip & Restart Gunicorn
       # ----------------------------
-      - name: Restart Apache Service
+      - name: Restart App on EC2
         run: |
-          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart httpd"
+          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            cd /opt/app &&
+            unzip -o clickchain-app.zip &&
+            pip install -r requirements.txt &&
+            sudo systemctl restart gunicorn
+          "
