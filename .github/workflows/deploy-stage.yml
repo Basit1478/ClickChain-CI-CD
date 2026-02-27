@@ -47,3 +47,26 @@ jobs:
         with:
           name: clickchain-app
           path: clickchain-app.zip
+
+           # Setup SSH Key
+      # ----------------------------
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # ----------------------------
+      # Deploy JAR to EC2 
+      # ----------------------------
+      - name: Deploy Python to EC2
+        run: |
+          scp -i ~/.ssh/ec2_key target/*.py ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/app/
+
+      # ----------------------------
+      # Restart Apache Service
+      # ----------------------------
+      - name: Restart Apache Service
+        run: |
+          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart httpd"
